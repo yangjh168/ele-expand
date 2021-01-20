@@ -1,6 +1,6 @@
 <template>
   <div class="handle-box">
-    <el-form v-bind="$attrs" v-on="$listeners">
+    <el-form :model="currentValue" ref="elForm" v-bind="$attrs" v-on="$listeners">
       <slot name="header"></slot>
       <slot />
       <slot name="footer"></slot>
@@ -12,6 +12,7 @@
 
 export default {
   name: 'TsForm',
+  inheritAttrs: false,
   props: {
     // 表单对象数据
     value: {
@@ -31,9 +32,12 @@ export default {
     value (val) {
       this.currentValue = val
     },
-    currentValue (val) {
-      this.$emit('input', val)
-      this.$emit('change', val)
+    currentValue: {
+      deep: true,
+      handler: function (val, oldVal) {
+        this.$emit('input', val)
+        this.$emit('change', val)
+      }
     }
   },
   created () {
@@ -44,6 +48,19 @@ export default {
     // 监听值变化触发函数
     updateValue (key, value) {
       this.$set(this.currentValue, key, value)
+    },
+    // 实现el-form的一些内置方法
+    validate (rest) {
+      this.$refs.elForm.validate(rest)
+    },
+    validateField (rest) {
+      this.$refs.elForm.validateField(rest)
+    },
+    resetFields () {
+      this.$refs.elForm.resetFields()
+    },
+    clearValidate (rest) {
+      this.$refs.elForm.clearValidate(rest)
     }
   }
 }

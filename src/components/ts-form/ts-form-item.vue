@@ -1,61 +1,28 @@
 <template>
   <el-form-item
+    :prop="itemProp"
     :label="label"
     :label-width="labelWidth"
-    :aria-disabled="true"
   >
-    <!-- 方式一： -->
-    <!-- 文本框 / 数字框 -->
-    <!-- <template v-if="formType === 'text' || formType === 'number'">
-        <el-input
-          v-model.trim="currentValue"
-          v-bind="customAttrs"
-          type="text"
-          v-on="customListeners"
-        />
-      </template> -->
-    <!-- 选择框 / 内置默认选择框 -->
-    <!-- <template v-if="formType === 'select' || formType === 'default-select'">
-        <ts-select
-          v-model.trim="currentValue"
-          v-bind="customAttrs"
-          v-on="customListeners"
-        />
-      </template> -->
-    <!-- 时间日期 -->
-    <!-- <template v-if="formType === 'date-picker'">
-        <el-date-picker
-          v-model="dateValue"
-          v-bind="customAttrs"
-          v-on="customListeners"
-        />
-      </template> -->
-    <!-- <template v-if="formType === 'section'">
-        <ts-range
-          v-model.trim="sectionValue"
-          v-bind="customAttrs"
-          v-on="customListeners"
-        />
-      </template> -->
-
-    <!-- 方式二 -->
     <!-- 使用元组件component，通过:value 和@input手动实现v-module事件 -->
     <component
       v-if="current"
       :is="current"
-      :value="moduleKey"
+      :value="customValue"
       v-bind="customAttrs"
       v-on="customListeners"
     />
+    <slot />
   </el-form-item>
 </template>
 <script>
-import TsSelect from '@/components/ts-select'
-import TsRange from '@/components/ts-range'
+import TsSelect from '../ts-select'
+import TsRange from '../ts-range'
 import builtInList from './builtInList'
-import pickerOptions from '@/mixins/pickerOptions'
+import { pickerOptions } from './options'
 export default {
   name: 'TsFormItem',
+  inheritAttrs: false,
   components: {
     TsSelect,
     TsRange
@@ -74,17 +41,16 @@ export default {
       default: ''
     },
     field: { // 表单字段name
-      type: [String, Array],
-      required: true
+      type: [String, Array]
     },
     defaultList: { // 当formType为default-select时，默认的选项key，详情参考buildInList.js
       type: String,
       default: ''
     },
-    valueSeparator: { // 范围选择值得分隔符(formType为date-picker与section有效)
+    valueSeparator: { // 范围选择值得分隔符(formType为date-picker与range有效)
       type: String,
       default: function () {
-        if (this.formType === 'section') {
+        if (this.formType === 'range') {
           return '_'
         } else {
           return '~'
@@ -97,25 +63,34 @@ export default {
       current: null, // 当前渲染的组件
       parent: null, // 父组件ts-form实例
       dateValue: '', // 范围日期值
-      sectionValue: [], // 最大小值(设置为数组，让ts-range返回值为数组)
-      componentList: { // 动态组件配置(方式二)
-        text: { current: 'el-input', valueObj: 'currentValue' },
-        number: { current: 'el-input', valueObj: 'currentValue' },
-        select: { current: 'ts-select', valueObj: 'currentValue' },
-        'default-select': { current: 'ts-select', valueObj: 'currentValue' },
-        'date-picker': { current: 'el-date-picker', valueObj: 'dateValue' },
-        section: { current: 'ts-range', valueObj: 'sectionValue' }
+      rangeValue: [], // 最大小值(设置为数组，让ts-range返回值为数组)
+      componentList: { // 动态组件配置
+        text: 'el-input',
+        number: 'el-input',
+        select: 'ts-select',
+        defaultSelect: 'ts-select',
+        datePicker: 'el-date-picker',
+        range: 'ts-range'
       }
     }
   },
   computed: {
-    // 当前子组件的值
+    // 动态component的值，同时实时更新值
+    customValue () {
+      if (this.formType === 'datePicker' && this.checkRangeType()) {
+        return this.dateValue
+      } else if (this.formType === 'range') {
+        return this.rangeValue
+      } else {
+        return this.currentValue
+      }
+    }, // 当前组件的值。当前值从父组件获取，当前值改变触发父组件的updateValue更新值
     currentValue: {
       get () {
-        return (this.parent && this.parent.currentValue[this.field]) || ''
+        return (this.parent && this.parent.currentValue[this.itemProp]) || ''
       },
       set (val) {
-        this.parent.$emit('updateValue', this.field, val)
+        this.parent.$emit('updateValue', this.itemProp, val)
       }
     },
     // 扩展属性
@@ -126,15 +101,15 @@ export default {
         attrs.type = 'text'
         attrs.placeholder = attrs.placeholder || ('请输入' + (attrs.label || ''))
       }
-      if (['select', 'default-select'].includes(this.formType)) {
+      if (['select', 'defaultSelect'].includes(this.formType)) {
         attrs.placeholder = attrs.placeholder || ('请选择' + (attrs.label || ''))
       }
       // 内置选择框默认参数
-      if (this.formType === 'default-select') {
+      if (this.formType === 'defaultSelect') {
         attrs.data = builtInList[this.defaultList]
       }
       // 时间日期默认参数
-      if (this.formType === 'date-picker') {
+      if (this.formType === 'datePicker' && !this.$attrs.type) {
         attrs.type = 'daterange'
         attrs['picker-options'] = pickerOptions
         attrs['value-format'] = 'yyyy-MM-dd'
@@ -145,10 +120,9 @@ export default {
         attrs.align = 'right'
       }
       // 设置最大小值默认参数
-      if (this.formType === 'section') {
-        // console.log(attrs)
-      }
-
+      // if (this.formType === 'range') {
+      //   // console.log(attrs)
+      // }
       attrs = Object.assign(attrs, this.$attrs)
       return attrs
     },
@@ -156,45 +130,42 @@ export default {
     customListeners () {
       const vm = this
       const listeners = { ...this.$listeners }
-      // 重新input事件
+      // 重写input事件
       listeners.input = (val) => {
         this.changeInput(val)
       }
-      // 数字输入框默认方法
+      // 数字输入框时限制只能输入数字
       if (this.formType === 'number') {
         listeners.input = (val) => {
           const newVal = val.replace(/[^\d]/g, '')
           vm.currentValue = newVal
         }
       }
-      // 日期默认方法
-      if (this.formType === 'date-picker') {
-        listeners.change = (val) => {
-          this.handleChangeTime(val)
-          this.$emit('change', val)
-        }
-      }
-      // 最小大值默认方法
-      if (this.formType === 'section') {
-        listeners.change = (val) => {
-          this.handleChangeSection(val)
-          this.$emit('change', val)
-        }
-      }
       return listeners
     },
-    // 动态value(方式二)
-    moduleKey () {
-      const obj = this.findConValueObj(this.formType)
-      return this[obj.valueObj]
+    // 实现el-form-item的pop，表单验证需要
+    itemProp () {
+      if (Array.isArray(this.field)) {
+        return this.field.join('-')
+      } else {
+        return this.field
+      }
     }
   },
   watch: {
+    // 当formType为date-picker、range时，去更新内置双向绑定的值
+    currentValue (val) {
+      if (this.formType === 'datePicker' && this.checkRangeType()) {
+        this.dateValue = val ? val.split(this.valueSeparator) : ''
+      } else if (this.formType === 'range') {
+        this.rangeValue = val ? val.split(this.valueSeparator) : []
+      }
+    }
   },
   created () {
-    // 检查是哪个组件(方式二)
-    const obj = this.findConValueObj(this.formType)
-    this.current = obj.current
+    // 匹配组件
+    const formItem = this.componentList[this.formType]
+    formItem && (this.current = formItem)
     // 查找父组件
     this.findCptUpward('TsForm')
   },
@@ -209,53 +180,48 @@ export default {
         }
         parentCpt = parentCpt.$parent
       }
-    },
-    // 改变时间日期
-    handleChangeTime (val) {
-      if (Array.isArray(this.field)) {
-        // 返回两个值字段
-        if (val) {
-          this.$set(this.parent.currentValue, this.field[0], val[0])
-          this.$set(this.parent.currentValue, this.field[1], val[1])
-        } else {
-          this.$set(this.parent.currentValue, this.field[0], '')
-          this.$set(this.parent.currentValue, this.field[1], '')
+      // 初始化表单字段
+      if (this.parent && this.itemProp) {
+        const key = this.itemProp
+        if (!Object.hasOwnProperty.call(this.parent.currentValue, key)) {
+          this.parent && this.$set(this.parent.currentValue, key, '')
         }
-      } else {
-        // 一个值字段
-        this.$set(this.parent.currentValue, this.field, `${val[0]}${this.valueSeparator}${val[1]}`)
       }
     },
-    // 改变最大小值
-    handleChangeSection (val) {
-      if (Array.isArray(this.field)) {
-        // 返回两个值字段
-        if (val) {
-          this.$set(this.parent.currentValue, this.field[0], val[0])
-          this.$set(this.parent.currentValue, this.field[1], val[1])
-        } else {
-          this.$set(this.parent.currentValue, this.field[0], '')
-          this.$set(this.parent.currentValue, this.field[1], '')
-        }
-      } else {
-        // 一个值字段
-        this.$set(this.parent.currentValue, this.field, `${val[0]}${this.valueSeparator}${val[1]}`)
-      }
-    },
-    // 处理component元组件的input事件（方法二）
+    // 处理component元组件的input事件
     changeInput (val) {
-      const obj = this.findConValueObj(this.formType)
-      const key = obj.valueObj
-      this[key] = val
+      // console.log(val)
+      // 当前formType为date-picker、range时，自定义格式手动改变表单值
+      if ((this.formType === 'datePicker' && this.checkRangeType()) || this.formType === 'range') {
+        if (Array.isArray(this.field)) {
+          // 返回两个值字段
+          if (val && val.length === 2) {
+            this.$set(this.parent.currentValue, this.field[0], val[0])
+            this.$set(this.parent.currentValue, this.field[1], val[1])
+          } else {
+            this.$set(this.parent.currentValue, this.field[0], '')
+            this.$set(this.parent.currentValue, this.field[1], '')
+          }
+        }
+        // 为了提供表单验证
+        if (val && val.length === 2) {
+          this.$set(this.parent.currentValue, this.itemProp, `${val[0]}${this.valueSeparator}${val[1]}`)
+        } else {
+          this.$set(this.parent.currentValue, this.itemProp, '')
+        }
+      } else {
+      // 其它formType，直接改变currentValue，currentValue会触发$emit('updateValue', val)去更新表单
+        this.currentValue = val
+      }
     },
-    // 根据formType查找valueObj（方法二）
-    findConValueObj (formType) {
-      const formItem = this.componentList[formType]
-      return formItem
+    // 检测是否为范围选择组件
+    checkRangeType () {
+      if (!this.$attrs.type || ['datetimerange', 'daterange', 'monthrange'].includes(this.$attrs.type)) {
+        return true
+      } else {
+        return false
+      }
     }
   }
 }
 </script>
-<style lang="scss" scoped>
-
-</style>

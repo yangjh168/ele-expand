@@ -1,5 +1,5 @@
 <template>
-    <ts-form v-bind="$attrs" v-on="$listeners" v-model="currentForm">
+    <ts-form v-bind="customAttrs" v-on="$listeners" v-model="currentForm">
       <template #header>
         <div v-if="showSimple" class="simple-search">
           <div class="search-input-box">
@@ -23,13 +23,19 @@
       <transition name="fade-top">
         <div v-show="moreOparation || !showSimple" class="filter-wrapper">
           <slot />
+          <el-form-item>
+            <el-button v-if="showSearchBtn" type="primary" @click="handleSearch">搜索</el-button>
+            <slot name="footer" />
+          </el-form-item>
         </div>
       </transition>
     </ts-form>
 </template>
 <script>
-import { TsForm } from '@/components/ts-form'
+import { TsForm } from '../ts-form'
 export default {
+  name: 'TsSearch',
+  inheritAttrs: false,
   components: {
     TsForm
   },
@@ -53,12 +59,30 @@ export default {
     placeholder: {
       type: String,
       default: '请输入'
+    },
+    // 是否开启行内布局
+    inline: {
+      type: Boolean,
+      default: true
+    },
+    // 是否显示细节搜索的搜索按钮
+    showSearchBtn: {
+      type: Boolean,
+      default: true
     }
   },
   data () {
     return {
       currentForm: this.value,
       moreOparation: this.showComplex
+    }
+  },
+  computed: {
+    customAttrs () {
+      return {
+        inline: this.inline,
+        ...this.$attrs
+      }
     }
   },
   methods: {

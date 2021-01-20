@@ -1,6 +1,7 @@
 <template>
-  <div class="section flex">
+  <div class="ts-range">
     <el-input
+      class="ts-range-item"
       v-model.trim="startValue"
       :disabled="disabled && disabled[0]"
       :maxlength="maxlength && maxlength[0]"
@@ -10,8 +11,9 @@
       type="text"
       @input="handleInput('startValue', startValue)"
     />
-    <span class="ml15 mr15">{{ rangeSeparator }}</span>
+    <span class="range-separator">{{ rangeSeparator }}</span>
     <el-input
+      class="ts-range-item"
       v-model.trim="endValue"
       :disabled="disabled && disabled[1]"
       :maxlength="maxlength && maxlength[1]"
@@ -41,6 +43,8 @@ const valueEquals = function (a, b) {
 }
 
 export default {
+  name: 'TsRange',
+  inheritAttrs: false,
   props: {
     // 输入框值
     value: {
@@ -120,16 +124,33 @@ export default {
     },
     value (val, oldVal) {
       if (!valueEquals(val, oldVal)) {
-        if (Array.isArray(val) && (valueEquals(val[0], this.startValue) || valueEquals(val[1], this.endValue))) {
-          return
+        if (val && val.length > 0) {
+          if (Array.isArray(val)) {
+            if (val && val.length === 2) {
+              this.startValue = val ? val[0] : ''
+              this.endValue = val ? val[1] : ''
+            } else {
+              console.error('[error] prop:v-model\'s length should be 2')
+            }
+          } else {
+            const ary = val.split(this.valueSeparator)
+            if (ary && ary.length === 2) {
+              this.startValue = ary ? ary[0] : ''
+              this.endValue = ary ? ary[1] : ''
+            } else {
+              console.error('[error] prop:v-model must be split to conform to valueSeparator format')
+            }
+          }
+        } else {
+          this.startValue = ''
+          this.endValue = ''
         }
-        this.updateValue()
       }
     },
-    startValue () {
+    startValue (val) {
       this.updateValue()
     },
-    endValue () {
+    endValue (val) {
       this.updateValue()
     },
     valueSeparator () {
@@ -143,15 +164,32 @@ export default {
     },
     // 动态更新值
     updateValue () {
-      if (Array.isArray(this.value)) {
-        this.currentValue = [this.startValue, this.endValue]
+      if (this.startValue || this.endValue) {
+        if (Array.isArray(this.value)) {
+          this.currentValue = [this.startValue ? this.startValue : '', this.endValue ? this.endValue : '']
+        } else {
+          this.currentValue = `${this.startValue}${this.valueSeparator}${this.endValue}`
+        }
       } else {
-        this.currentValue = `${this.startValue}${this.valueSeparator}${this.endValue}`
+        if (Array.isArray(this.value)) {
+          this.currentValue = []
+        } else {
+          this.currentValue = ''
+        }
       }
     }
   }
 }
 </script>
 <style lang="scss" scoped>
-
+  .ts-range {
+    display: flex;
+    align-items: center;
+    .ts-range-item {
+      flex: 1;
+    }
+    .range-separator {
+      margin: 0 15px;
+    }
+  }
 </style>

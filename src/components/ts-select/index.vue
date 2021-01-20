@@ -6,6 +6,8 @@
 </template>
 <script>
 export default {
+  name: 'TsSelect',
+  inheritAttrs: false,
   props: {
     value: { // 选择框的值
       type: [Number, String],
@@ -104,8 +106,12 @@ export default {
   },
   async created () {
     if (this.url) {
-      const res = await this.$axios.get(this.url)
-      this.options = this.parseData(res)
+      try {
+        const res = await this.$axios.get(this.url)
+        this.options = this.parseData(res)
+      } catch (error) {
+        console.log(error)
+      }
     }
   }
 }

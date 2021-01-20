@@ -1,6 +1,6 @@
 module.exports = {
-  title: '扩展Ele组件',
-  description: '别怂，干就完了',
+  title: '二次封装ele组件',
+  description: '别怂，看就完了',
   dest: './dist',    // 设置输出目录
   base: '/', // 设置站点根路径
   themeConfig: {
@@ -18,6 +18,7 @@ module.exports = {
           'ts-select',
           'ts-range',
           'ts-form',
+          'ts-search'
         ]
 	    }]
     }
@@ -28,5 +29,12 @@ module.exports = {
         '@img': 'images'
       }
     }
-  }
+  },
+  // 注册自定义组件
+  // https://vuepress.vuejs.org/zh/plugin/official/plugin-register-components.html#%E5%AE%89%E8%A3%85
+  plugins: [
+    [
+      'demo-container'
+    ]
+  ]
 }

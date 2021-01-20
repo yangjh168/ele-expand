@@ -11,33 +11,7 @@ const routes = [
   {
     path: '/',
     name: 'Home',
-    component: () => import('@/views/index'),
-    children: [
-      {
-        path: '/',
-        redirect: '/select'
-      },
-      {
-        path: '/select',
-        name: 'select',
-        component: () => import('@/example/select')
-      },
-      {
-        path: '/range',
-        name: 'range',
-        component: () => import('@/example/range')
-      },
-      {
-        path: '/form',
-        name: 'form',
-        component: () => import('@/example/form')
-      },
-      {
-        path: '/search',
-        name: 'search',
-        component: () => import('@/example/search')
-      }
-    ]
+    component: () => import('@/views/index')
   }
 ]
 
