@@ -113,7 +113,7 @@
 ### 使用指南
 
 ```js
-import { TsSearch, TsFormItem } from '@/components/ts-form'
+import { TsSearch, TsFormItem } from '@/components/ts-search'
 Vue.use(TsSearch);
 Vue.use(TsFormItem);
 ```

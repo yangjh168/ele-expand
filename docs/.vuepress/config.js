@@ -4,7 +4,7 @@ module.exports = {
   dest: './dist',    // 设置输出目录
   base: '/', // 设置站点根路径
   themeConfig: {
-    repo: 'https://github.com/yangjh168' ,
+    repo: 'https://github.com/yangjh168/ele-expand' ,
     nav: [
       { text: '首页', link: '/' },
       { text: 'Element', link: 'https://element.eleme.cn/#/zh-CN' },
