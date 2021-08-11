@@ -103,6 +103,9 @@ export default {
     }
   },
   watch: {
+    data(val) {
+      this.options = (!this.url) ? (val || []) : []
+    },
     value(val) {
       this.currentValue = val
     },
